@@ -1,4 +1,5 @@
 import nn
+import numpy as np
 
 class PerceptronModel(object):
     def __init__(self, dimensions):
@@ -71,6 +72,17 @@ class RegressionModel(object):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
 
+        l1_size = 55
+        self.l1_weights_in = nn.Parameter(1, l1_size)
+        self.l1_bias_in = nn.Parameter(1, l1_size)
+
+        self.l1_weights_out = nn.Parameter(l1_size, 1)
+        self.l1_bias_out = nn.Parameter(1, 1)
+
+        self.learning_rate = -0.01
+
+
+
     def run(self, x):
         """
         Runs the model for a batch of examples.
@@ -81,6 +93,12 @@ class RegressionModel(object):
             A node with shape (batch_size x 1) containing predicted y-values
         """
         "*** YOUR CODE HERE ***"
+        in_nodes = nn.Linear(x, self.l1_weights_in)
+        in_nodes = nn.AddBias(in_nodes, self.l1_bias_in)
+        in_nodes = nn.ReLU(in_nodes)
+        in_nodes = nn.Linear(in_nodes, self.l1_weights_out)
+        in_nodes = nn.AddBias(in_nodes, self.l1_bias_out)
+        return in_nodes
 
     def get_loss(self, x, y):
         """
@@ -93,12 +111,37 @@ class RegressionModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        loss_node = nn.SquareLoss(self.run(x), y)
+        return loss_node
+
 
     def train(self, dataset):
         """
         Trains the model.
         """
-        "*** YOUR CODE HERE ***"
+
+        avg_loss = 1
+        batch_size = 10
+
+        while (avg_loss >= 0.001):
+            losses = []
+
+            for x, y in dataset.iterate_once(batch_size):
+                curr_loss = self.get_loss(x, y)
+
+                grd_w_in, grd_b_in, grd_w_out, grd_b_out = nn.gradients(curr_loss, [self.l1_weights_in, self.l1_bias_in, self.l1_weights_out, self.l1_bias_out])
+
+                self.l1_weights_in.update(grd_w_in, self.learning_rate)
+                self.l1_bias_in.update(grd_b_in, self.learning_rate)
+
+                self.l1_weights_out.update(grd_w_out, self.learning_rate)
+                self.l1_bias_out.update(grd_b_out, self.learning_rate)
+
+                losses.append(nn.as_scalar(curr_loss))
+
+            avg_loss = np.mean(losses)
+
+
 
 class DigitClassificationModel(object):
     """
