@@ -161,14 +161,14 @@ class DigitClassificationModel(object):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
 
-        l1_size = 55
+        l1_size = 100
         self.l1_weights_in = nn.Parameter(784, l1_size)
         self.l1_bias_in = nn.Parameter(1, l1_size)
 
         self.l1_weights_out = nn.Parameter(l1_size, 10)
         self.l1_bias_out = nn.Parameter(1, 10)
 
-        self.learning_rate = -0.005
+        self.learning_rate = -0.01
 
 
     def run(self, x):
@@ -218,12 +218,10 @@ class DigitClassificationModel(object):
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
-        avg_loss = 1
-        batch_size = 10
+        val_acc = 0
+        batch_size = 20
 
-        while (avg_loss >= 0.001):
-            losses = []
-
+        while (val_acc < 0.98):
             for x, y in dataset.iterate_once(batch_size):
                 curr_loss = self.get_loss(x, y)
 
@@ -237,9 +235,10 @@ class DigitClassificationModel(object):
                 self.l1_weights_out.update(grd_w_out, self.learning_rate)
                 self.l1_bias_out.update(grd_b_out, self.learning_rate)
 
-                losses.append(nn.as_scalar(curr_loss))
+            val_acc = dataset.get_validation_accuracy()
 
-            avg_loss = np.mean(losses)
+            #if val_acc >= 0.965:
+            #    self.learning_rate = self.learning_rate/2
 
 
 class LanguageIDModel(object):
