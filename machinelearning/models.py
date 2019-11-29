@@ -259,6 +259,19 @@ class LanguageIDModel(object):
 
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+        l1_size = 256
+        self.w_in= nn.Parameter(self.num_chars, l1_size)
+        self.b_in = nn.Parameter(1, l1_size)
+
+        self.w_hidden = nn.Parameter(l1_size, l1_size)
+        self.b_hidden = nn.Parameter(1, l1_size)
+
+        self.w_out = nn.Parameter(l1_size, 5)
+        self.b_out = nn.Parameter(1, 5)
+
+        self.learning_rate = -0.05
+
+
 
     def run(self, xs):
         """
@@ -290,6 +303,19 @@ class LanguageIDModel(object):
                 (also called logits)
         """
         "*** YOUR CODE HERE ***"
+        inputs = None
+        for char in xs:
+            if inputs == None:
+                inputs = nn.AddBias(nn.Linear(char, self.w_in), self.b_in)
+                inputs = nn.ReLU(inputs)
+
+            inputs = nn.Add(nn.AddBias(nn.Linear(char, self.w_in), self.b_in), nn.Linear(inputs, self.w_hidden))
+            inputs = nn.ReLU(nn.AddBias(inputs, self.b_hidden))
+
+        inputs = nn.Linear(inputs, self.w_out)
+        inputs = nn.AddBias(inputs, self.b_out)
+        return inputs
+
 
     def get_loss(self, xs, y):
         """
@@ -305,10 +331,34 @@ class LanguageIDModel(object):
             y: a node with shape (batch_size x 5)
         Returns: a loss node
         """
-        "*** YOUR CODE HERE ***"
+        return nn.SoftmaxLoss(self.run(xs), y)
 
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        val_acc = 0
+        batch_size = 200
+
+        while val_acc <= 0.86:
+            for x, y in dataset.iterate_once(batch_size):
+                curr_loss = self.get_loss(x, y)
+
+                grd_w_in, grd_b_in, grd_w_out, grd_b_out, grd_b_hidden, grd_w_hidden = nn.gradients(curr_loss, [self.w_in, self.b_in, self.w_out, self.b_out, self.b_hidden, self.w_hidden])
+
+                self.w_in.update(grd_w_in, self.learning_rate)
+                self.w_hidden.update(grd_w_hidden, self.learning_rate)
+                self.b_in.update(grd_b_in, self.learning_rate)
+                self.b_hidden.update(grd_b_hidden, self.learning_rate)
+
+                self.w_out.update(grd_w_out, self.learning_rate)
+                self.b_out.update(grd_b_out, self.learning_rate)
+
+                val_acc = dataset.get_validation_accuracy()
+                if val_acc >= 86:
+                    break
+
+            # if val_acc >= 0.965:
+            #    self.learning_rate = self.learning_rate/2
+
